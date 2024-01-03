@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'rest_framework',
+
     'apps.captcha'
 ]
 
@@ -132,8 +134,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# redis captcha
+# redis
 REDIS_HOST = config('REDIS_HOST')
 REDIS_PORT = config('REDIS_PORT')
-REDIS_JWT_TOKEN = redis.StrictRedis(host=REDIS_HOST,
-                                    port=REDIS_PORT, db=0)
+
+
+# redis captcha
+REDIS_CAPTCHA_TIME = 60
+REDIS_CAPTCHA = redis.StrictRedis(host=REDIS_HOST,
+                                  port=REDIS_PORT, db=0)
