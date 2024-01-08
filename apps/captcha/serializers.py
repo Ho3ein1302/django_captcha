@@ -1,7 +1,8 @@
 import uuid
 import base64
 
-from config import settings
+from django.conf import settings
+
 from rest_framework import serializers
 from rest_captcha import captcha
 from rest_captcha.settings import api_settings

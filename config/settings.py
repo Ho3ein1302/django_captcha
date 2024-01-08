@@ -15,6 +15,7 @@ from pathlib import Path
 import redis
 from decouple import config
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -42,8 +43,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_captcha',
 
-    'apps.captcha'
+    'apps.users',
+    'apps.captcha',
 ]
 
 MIDDLEWARE = [
@@ -131,6 +135,9 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
+
+AUTH_USER_MODEL = 'users.User'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
@@ -142,4 +149,9 @@ REDIS_PORT = config('REDIS_PORT')
 # redis captcha
 REDIS_CAPTCHA_TIME = 60
 REDIS_CAPTCHA = redis.StrictRedis(host=REDIS_HOST,
-                                  port=REDIS_PORT, db=0)
+                                  port=REDIS_PORT, db=1)
+
+# jwt token
+REDIS_REFRESH_TIME = 20 * 60
+REDIS_JWT_TOKEN = redis.StrictRedis(host=REDIS_HOST,
+                                    port=REDIS_PORT, db=2)
