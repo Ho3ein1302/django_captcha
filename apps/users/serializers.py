@@ -9,7 +9,7 @@ from .models import User
 from .utils import get_tokens
 
 
-class UserSerializer(serializers.Serializer):
+class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
@@ -19,6 +19,7 @@ class UserSerializer(serializers.Serializer):
 class RegisterSerializer(serializers.ModelSerializer):
     re_password = serializers.CharField(write_only=True, required=True)
     captcha_key = serializers.CharField(write_only=True, required=True)
+    captcha_value = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
@@ -30,19 +31,32 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email',
             'password',
             're_password',
+            'captcha_key',
+            'captcha_value',
         ]
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
     def validate(self, data):
+        user_captcha_vlue = data['captcha_value']
+        redis_captcha_value = settings.REDIS_CAPTCHA.get(data['captcha_key'])
+        try:
+            redis_captcha_value = redis_captcha_value.decode('utf-8')
+        except Exception:
+            raise ValidationError(_('incorrect captcha'))
         password = data['password']
         re_password = data['re_password']
 
-        if password != re_password:
-            raise ValidationError(_('password and re_password must be match'))
+        if user_captcha_vlue != redis_captcha_value:
+            raise ValidationError(_('incorrect captcha'))
         else:
-            return data
+            if password != re_password:
+                raise ValidationError(_('password and re_password must be match'))
+            if password == re_password:
+                return data
+            else:
+                raise ValidationError(_('something is wrong'))
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
