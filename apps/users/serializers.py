@@ -4,13 +4,11 @@ from django.conf import settings
 
 from rest_framework import serializers
 
-
 from .models import User
 from .utils import get_tokens
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = '__all__'
@@ -18,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     re_password = serializers.CharField(write_only=True, required=True)
+    token = serializers.SerializerMethodField(read_only=True)
     captcha_key = serializers.CharField(write_only=True, required=True)
     captcha_value = serializers.CharField(write_only=True, required=True)
 
@@ -33,21 +32,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             're_password',
             'captcha_key',
             'captcha_value',
+            'token',
         ]
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
     def validate(self, data):
+        password = data['password']
+        re_password = data['re_password']
         user_captcha_vlue = data['captcha_value']
         redis_captcha_value = settings.REDIS_CAPTCHA.get(data['captcha_key'])
         try:
             redis_captcha_value = redis_captcha_value.decode('utf-8')
         except Exception:
             raise ValidationError(_('incorrect captcha'))
-        password = data['password']
-        re_password = data['re_password']
-
         if user_captcha_vlue != redis_captcha_value:
             raise ValidationError(_('incorrect captcha'))
         else:
@@ -58,15 +57,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             else:
                 raise ValidationError(_('something is wrong'))
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        user = User.objects.get(id=instance.id)
+    def get_token(self, obj):
+        user = User.objects.get(id=obj.id)
         token = get_tokens(user)
         refresh = token['refresh']
         access = token['access']
         settings.REDIS_JWT_TOKEN.set(name=refresh, value=refresh, ex=settings.REDIS_REFRESH_TIME)
-        ret['token'] = {'access': access, 'refresh': refresh}
-        return ret
+        return {'refresh': refresh, 'access': access}
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -78,3 +75,62 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    captcha_key = serializers.CharField(write_only=True, required=True)
+    captcha_value = serializers.CharField(write_only=True, required=True)
+    token = serializers.SerializerMethodField(read_only=True)
+    user = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['username',
+                  'password',
+                  'user',
+                  'token',
+                  'captcha_key',
+                  'captcha_value']
+
+    def validate(self, data):
+        enter_password = data['password']
+        user_captcha_vlue = data['captcha_value']
+        redis_captcha_value = settings.REDIS_CAPTCHA.get(data['captcha_key'])
+        try:
+            redis_captcha_value = redis_captcha_value.decode('utf-8')
+        except Exception:
+            raise ValidationError(_('incorrect captcha'))
+        if user_captcha_vlue != redis_captcha_value:
+            raise ValidationError(_('incorrect captcha'))
+        else:
+            try:
+                user = User.objects.get(
+                    username=data['username']
+                )
+                if user.check_password(enter_password):
+                    return data
+                raise ValidationError(_('username or password are wrong'))
+            except Exception:
+                raise ValidationError(_('username or password are wrong'))
+
+    def get_token(self, obj):
+        user = User.objects.get(username=obj['username'])
+        token = get_tokens(user)
+        refresh = token['refresh']
+        access = token['access']
+        settings.REDIS_JWT_TOKEN.set(name=refresh, value=refresh, ex=settings.REDIS_REFRESH_TIME)
+        return {'refresh': refresh, 'access': access}
+
+    def get_user(self, obj):
+        try:
+            user = User.objects.get(username=obj['username'])
+            user = UserSerializer(instance=user)
+            return user.data
+        except Exception:
+            raise ValidationError(_('username or password is wrong'))
+
+
+class LogoutSerializer(serializers.ModelSerializer):
+    pass
