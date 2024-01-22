@@ -24,3 +24,11 @@ class UserLogin(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data, status.HTTP_200_OK)
+
+
+class UserLogOut(UserLogin):
+    serializer_class = serializers.LogoutSerializer
+
+
+class GetNewRefreshToken(UserLogin):
+    serializer_class = serializers.RefreshTokenSerializer

@@ -147,11 +147,11 @@ REDIS_PORT = config('REDIS_PORT')
 
 
 # redis captcha
-REDIS_CAPTCHA_TIME = 60
+REDIS_CAPTCHA_TIME = 60 * 10
 REDIS_CAPTCHA = redis.StrictRedis(host=REDIS_HOST,
                                   port=REDIS_PORT, db=1)
 
 # jwt token
-REDIS_REFRESH_TIME = 20 * 60
+REDIS_REFRESH_TIME = 20 * 260
 REDIS_JWT_TOKEN = redis.StrictRedis(host=REDIS_HOST,
                                     port=REDIS_PORT, db=2)
