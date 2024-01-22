@@ -10,4 +10,4 @@ class GenerateCaptchaView(GenericAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(request.data)
-        return Response(serializer.data, status.HTTP_200_OK)
+        return Response(serializer.data, status.HTTP_201_CREATED)
