@@ -1,10 +1,10 @@
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 from django.conf import settings
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
-from model_bakery import baker
+# from model_bakery import baker
 
 from .. import models
 
@@ -46,3 +46,7 @@ class UserRegisterTest(APITestCase):
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertGreaterEqual(models.User.objects.all().count(), 0)
 
+    def test_user_register_jwt_token(self):
+        response = self.client.post(self.url, self.data)
+        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(settings.REDIS_JWT_TOKEN.get(response.data['token']['refresh']))
